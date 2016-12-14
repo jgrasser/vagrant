@@ -21,10 +21,16 @@ Vagrant.configure("2") do |config|
     machine.name="#{ARGV[1]}" 
   end
 
+  config.vm.provider "virtualbox" do |vm|
+    vm.customize ["modifyvm", :id, "--name", "#{ARGV[1]}"] 
+  end
+
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "jge/centos7"
-
+   config.vm.box = "centos/7"
+  
+  # Turn off synced folder to fix rsync bug with centos 7 
+   config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -38,7 +44,8 @@ Vagrant.configure("2") do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  # config.vm.network "private_network", ip: "192.168.33.10"
+   config.vm.network "private_network", ip: "10.100.100.10", auto_config: false, virtualbox__intnet:"intnet"
+   config.vm.network "private_network", ip: "10.100.100.11", auto_config: false, virtualbox__intnet:"intnet"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
@@ -76,8 +83,18 @@ Vagrant.configure("2") do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   apt-get update
-  #   apt-get install -y apache2
-  # SHELL
+   config.vm.provision "shell", inline: <<-SHELL
+       mkdir -p /share/{nfs,smb}/{user,group} 
+       mkdir -p /html/{user,group,open,cg-bin}
+       echo "**USER ** THIS IS A USER CONTROLED DIR" > /html/user/index.html
+       echo "**GROUP** THIS IS A GROUP CONTROLLED DIR" > /html/group/index.html
+       echo "**OPEN ** EVERYONE CAN SEE THIS DIR" > /html/open/index.html
+       groupadd dogs
+       groupadd cats
+       groupadd pets
+       useradd persian -G cats,pets
+       useradd puma -G cats
+       useradd lab -G dogs,pets
+       useradd golden -G dogs,pets
+   SHELL
 end
