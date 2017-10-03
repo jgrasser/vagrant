@@ -44,9 +44,8 @@ Vagrant.configure("2") do |config|
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-   config.vm.network "private_network", ip: "10.100.100.10", auto_config: false, virtualbox__intnet:"intnet"
-   config.vm.network "private_network", ip: "10.100.100.11", auto_config: false, virtualbox__intnet:"intnet"
-
+  # config.vm.network "private_network", ip: "10.100.100.10", auto_config: false, virtualbox__intnet:"intnet"
+  
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
   # your network.
@@ -84,18 +83,28 @@ Vagrant.configure("2") do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-   config.vm.provision "shell", inline: <<-SHELL
-       mkdir -p /share/{nfs,smb}/{user,group} 
-       mkdir -p /html/{user,group,open,cg-bin}
-       echo "**USER ** THIS IS A USER CONTROLED DIR" > /html/user/index.html
-       echo "**GROUP** THIS IS A GROUP CONTROLLED DIR" > /html/group/index.html
-       echo "**OPEN ** EVERYONE CAN SEE THIS DIR" > /html/open/index.html
-       groupadd dogs
-       groupadd cats
-       groupadd pets
-       useradd persian -G cats,pets
-       useradd puma -G cats
-       useradd lab -G dogs,pets
-       useradd golden -G dogs,pets
-   SHELL
+  if "#{ARGV[1]}".start_with?('docker')
+        config.vm.provision "shell", inline: <<-SHELL
+            yum install -y yum-utils device-mapper-persistent-data lvm2
+            yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+            yum install -y docker-ce
+            systemctl enable docker
+            systemctl start docker
+         SHELL
+   else
+       config.vm.provision "shell", inline: <<-SHELL
+          mkdir -p /share/{nfs,smb}/{user,group}
+          mkdir -p /html/{user,group,open,cg-bin}
+          echo "**USER ** THIS IS A USER CONTROLED DIR" > /html/user/index.html
+          echo "**GROUP** THIS IS A GROUP CONTROLLED DIR" > /html/group/index.html
+          echo "**OPEN ** EVERYONE CAN SEE THIS DIR" > /html/open/index.html
+          groupadd dogs
+          groupadd cats
+          groupadd pets
+          useradd persian -G cats,pets
+          useradd puma -G cats
+          useradd lab -G dogs,pets
+          useradd golden -G dogs,pets
+       SHELL
+   end
 end
